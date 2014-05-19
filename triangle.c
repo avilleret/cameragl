@@ -40,9 +40,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GLES2/gl2.h"
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
+#include "lo/lo.h"
 
 #include "cube_texture_and_coords.h"
-#include "models.h"
 #include "triangle.h"
 #include <pthread.h>
 
@@ -152,7 +152,7 @@ static void init_ogl(CUBE_STATE_T *state)
          
    dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
       0/*layer*/, &dst_rect, 0/*src*/,
-      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, 0/*transform*/);
+      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, (DISPMANX_TRANSFORM_T) 0/*transform*/);
       
    nativewindow.element = dispman_element;
    nativewindow.width = state->screen_width;
@@ -208,12 +208,103 @@ static void init_model_proj(CUBE_STATE_T *state)
 }
 
 /***********************************************************
- * Name: reset_model
+ * Name: destroy_array
  *
  * Arguments:
  *       CUBE_STATE_T *state - holds OGLES model info
  *
- * Description: Resets the Model projection and rotation direction
+ * Description: Create array to store uniform variables
+ *
+ * Returns: void
+ *
+ ***********************************************************/
+void destroy_array(CUBE_STATE_T *state) {
+  if (state->param)
+    {
+      int i;
+      for (i = 0; i < state->uniformCount; i++){
+        if(state->param[i])free(state->param[i]);
+        //~state->param[i]=NULL;
+      }
+    }
+
+  if (state->size)   free(state->size);  // state->size   =NULL;
+  if (state->type)   free(state->type);  // state->type   =NULL;
+  if (state->flag)   free(state->flag);  // state->flag   =NULL;
+  if (state->loc)    free(state->loc);   // state->loc    =NULL;
+  if (state->param)  free(state->param); // state->param  =NULL;
+}
+
+/***********************************************************
+ * Name: create_array
+ *
+ * Arguments:
+ *       CUBE_STATE_T *state - holds OGLES model info
+ *
+ * Description: Create array to store uniform variables
+ *
+ * Returns: void
+ *
+ ***********************************************************/
+static void create_array(CUBE_STATE_T *state){
+  int i;
+
+  state->size   = (GLint*) malloc(sizeof( GLint)*state->uniformCount);
+  state->type   = (GLenum*) malloc(sizeof( GLenum)*state->uniformCount);
+  state->param  = (GLfloat**) malloc(sizeof( GLfloat*)*state->uniformCount);
+  state->flag   = (int*) malloc(sizeof( int)*state->uniformCount);
+  state->loc    = (GLint*) malloc(sizeof( GLint)*state->uniformCount);
+
+  // allocate maximum size for a param, which is a 4x4 matrix of floats
+  // in the future, only allocate for specific type
+  // also, technically we should handle arrays of matrices, too...sheesh!
+  for (i = 0; i < state->uniformCount; i++) {
+    int j=0;
+    state->size   [i] = 0;
+    state->type   [i] = 0;
+    state->loc    [i] = 0;
+    state->param  [i] = (float*) malloc(sizeof(float)*16);
+    state->flag   [i] = 0;
+    for(j=0; j<16; j++)state->param[i][j]=0;
+  }
+}
+
+/***********************************************************
+ * Name: expose_uniform
+ *
+ * Arguments:
+ *       CUBE_STATE_T *state - holds OGLES model info
+ *
+ * Description: Expose shader uniform to OSC
+ *
+ * Returns: void
+ *
+ ***********************************************************/
+static void expose_uniform(CUBE_STATE_T *state){
+  glGetProgramiv( state->programObject, GL_ACTIVE_UNIFORM_MAX_LENGTH, &state->maxLength);
+  glGetProgramiv( state->programObject, GL_ACTIVE_UNIFORMS, &state->uniformCount);
+  printf("found %d uniform variable\n",state->uniformCount);
+  
+  create_array(state);
+  
+  int i;
+  GLchar *name= (GLchar*) malloc(sizeof(GLchar)*state->maxLength);
+  GLsizei    length=0;
+  for(i=0;i<state->uniformCount;i++){
+    glGetActiveUniform(state->programObject, i, state->maxLength, &length, &state->size[i], &state->type[i], name);
+    state->loc[i] = glGetUniformLocation( state->programObject, name );
+    printf("found param : %s\n",name);
+  }
+  free(name);
+}
+
+/***********************************************************
+ * Name: init_shaders
+ *
+ * Arguments:
+ *       CUBE_STATE_T *state - holds OGLES model info
+ *
+ * Description: Initiate shaders
  *
  * Returns: void
  *
@@ -229,15 +320,34 @@ static void init_shaders(CUBE_STATE_T *state)
 " gl_Position = vPosition; \n"
 "TexCoordOut = TexCoordIn;"
 "} \n";
- 
- const GLchar *fShaderStr = 
- "precision mediump float; \n"
-"varying vec2 TexCoordOut;\n"
-"uniform sampler2D Texture;\n"
- "void main() \n"
- "{ \n"
- " gl_FragColor = texture2D(Texture, TexCoordOut); \n"
- "}															\n";
+
+  GLchar *fShaderStr;
+
+  FILE * pFile;
+  long lSize;
+  int result;
+  const char * filename = "frag.glsl";
+
+  pFile = fopen (filename,"rb");
+  if (pFile==NULL) {printf ("can't read %s",filename); exit (1);}
+
+  // obtain file size:
+  fseek (pFile , 0 , SEEK_END);
+  lSize = ftell (pFile);
+  rewind (pFile);
+
+  // allocate memory to contain the whole file:
+  fShaderStr = (GLchar*) malloc (sizeof(GLchar)*lSize);
+  if (fShaderStr == NULL) {fputs ("Memory error",stderr); exit (2);}
+
+  // copy the file into the buffer:
+  result = fread (fShaderStr,1,lSize,pFile);
+  if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
+
+  /* the whole file is now loaded in the memory buffer. */
+
+  // terminate
+
 
 	GLuint vertexShader;
 	GLuint fragmentShader;
@@ -254,7 +364,7 @@ static void init_shaders(CUBE_STATE_T *state)
 
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
-	glShaderSource(fragmentShader, 1, &fShaderStr, NULL);
+	glShaderSource(fragmentShader, 1, (const GLchar **) &fShaderStr, NULL);
 
 	glCompileShader(fragmentShader);
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compiled);
@@ -277,21 +387,40 @@ static void init_shaders(CUBE_STATE_T *state)
 
 	glGetProgramiv(state->programObject, GL_LINK_STATUS, &linked);
 
- if(!linked) 
- {
- GLint infoLen = 0;
- glGetProgramiv(state->programObject, GL_INFO_LOG_LENGTH, &infoLen);
+  if(!linked) 
+  {
+    printf("can't link shader !!\n");
+    GLint infoLen = 0;
+    glGetProgramiv(state->programObject, GL_INFO_LOG_LENGTH, &infoLen);
 
- if(infoLen > 1)
- {
- char* infoLog = malloc(sizeof(char) * infoLen);
- glGetProgramInfoLog(state->programObject, infoLen, NULL, infoLog);
+    if(infoLen > 1)
+    {
+      char* infoLog = (char *) malloc(sizeof(char) * infoLen);
+      glGetProgramInfoLog(state->programObject, infoLen, NULL, infoLog);
 
- 
- free(infoLog);
- }
- glDeleteProgram(state->programObject);
- }
+      free(infoLog);
+    }
+    glDeleteProgram(state->programObject);
+  } else {
+    expose_uniform(state);
+  }
+  free (fShaderStr);
+  fclose (pFile);
+}
+
+/***********************************************************
+ * Name: init_osc
+ *
+ * Arguments:
+ *       CUBE_STATE_T *state - holds OGLES model info
+ *
+ * Description: Initiate OSC communication
+ *
+ * Returns: void
+ *
+ ***********************************************************/
+static void init_osc(CUBE_STATE_T *state)
+{
 }
 
 /***********************************************************
@@ -306,12 +435,17 @@ static void init_shaders(CUBE_STATE_T *state)
  * Returns: void
  *
  ***********************************************************/
+ int frame_id=0;
 static void redraw_scene(CUBE_STATE_T *state)
 {
    // Start with a clear screen
    glClear( GL_COLOR_BUFFER_BIT );
 
 	 glUseProgram(state->programObject);
+   
+   float invert = frame_id++/100.;
+   frame_id%=100;
+   glUniform1f(glGetUniformLocation(state->programObject,"invert"),invert);
    // Draw first (front) face:
    // Bind texture surface to current vertices
    glBindTexture(GL_TEXTURE_2D, state->tex);
@@ -329,11 +463,6 @@ static void redraw_scene(CUBE_STATE_T *state)
 
    eglSwapBuffers(state->display, state->surface);
 
-	 GLubyte arr[3];
-	 glReadPixels(state->screen_width / 2, state->screen_height / 2,1,1,
-			GL_RGB,GL_UNSIGNED_BYTE,arr);
-
-	 printf("%u, %u, %u\n", arr[0], arr[1], arr[2]);
 }
 
 /***********************************************************
@@ -404,19 +533,22 @@ static void exit_func(void)
    eglDestroySurface( state->display, state->surface );
    eglDestroyContext( state->display, state->context );
    eglTerminate( state->display );
-
+   
+   destroy_array(state);
+   
    // release texture buffers
    free(state->tex_buf1);
    free(state->tex_buf2);
    free(state->tex_buf3);
 
-   printf("\ncube closed\n");
+   printf("\nLongueVue closed\n");
 } // exit_func()
 
 //==============================================================================
 
 int main ()
 {
+   atexit(exit_func);
    bcm_host_init();
 
    // Clear application state
@@ -432,6 +564,12 @@ int main ()
 
    // initialise the OGLES texture(s)
    init_textures(state);
+   
+   // TODO : parse command line argument to set input/output port and IP
+   state->osc_inport = 9000;
+   state->osc_outport = 9001;
+   // initialise OSC
+   init_osc(state);
 
    while (!terminate)
    {
