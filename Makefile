@@ -1,6 +1,6 @@
-OBJS=triangle.o video.o models.o
-BIN=hello_teapot.bin
-LDFLAGS+=-lilclient
+OBJS=triangle.o video.o
+BIN=LongueVue.bin
+LDFLAGS+=-lilclient -llo
 
 include ../Makefile.include
 
