@@ -286,7 +286,7 @@ static void create_array(CUBE_STATE_T *state){
 static void expose_uniform(CUBE_STATE_T *state){
   glGetProgramiv( state->programObject, GL_ACTIVE_UNIFORM_MAX_LENGTH, &state->maxLength);
   glGetProgramiv( state->programObject, GL_ACTIVE_UNIFORMS, &state->uniformCount);
-  printf("found %d uniform variable\n",state->uniformCount);
+  printf("found %d uniform variable(s) : \n",state->uniformCount);
   
   create_array(state);
   
@@ -297,7 +297,7 @@ static void expose_uniform(CUBE_STATE_T *state){
     glGetActiveUniform(state->programObject, i, state->maxLength, &length, &state->size[i], &state->type[i], name);
     state->loc[i] = glGetUniformLocation( state->programObject, name );
     strncpy(state->name[i],name,length);
-    printf("found param : %s\n",name);
+    printf("\t%s\n",name);
   }
   free(name);
 }
@@ -401,10 +401,17 @@ static void init_shaders(CUBE_STATE_T *state)
     {
       char* infoLog = (char *) malloc(sizeof(char) * infoLen);
       glGetProgramInfoLog(state->programObject, infoLen, NULL, infoLog);
+      if ( infoLen ){
+        printf("error log :\n");
+        printf("%s\n",infoLog);
+      }
 
       free(infoLog);
     }
     glDeleteProgram(state->programObject);
+    free (fShaderStr);
+    fclose (pFile);
+    exit(1);
   } else {
     expose_uniform(state);
   }
@@ -724,7 +731,6 @@ int main ()
    {
       redraw_scene(state);
    }
-   exit_func();
    return 0;
 }
 
