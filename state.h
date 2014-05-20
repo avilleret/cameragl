@@ -6,6 +6,8 @@
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
 
+#include "lo/lo.h"
+
 typedef struct
 {
   uint32_t screen_width;
@@ -46,10 +48,12 @@ typedef struct
   GLint *size;
   GLenum *type;
   GLint *loc;
+  GLchar **name;
   GLfloat **param;
   int *flag;
   
   // OSC parameters
+  lo_server_thread st;
   unsigned int osc_inport;
   unsigned int osc_outport;
 } CUBE_STATE_T;
