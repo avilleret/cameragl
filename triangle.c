@@ -40,7 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GLES2/gl2.h"
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
-#include "lo/lo.h"
 
 #include "cube_texture_and_coords.h"
 #include "triangle.h"
@@ -224,6 +223,7 @@ void destroy_array(CUBE_STATE_T *state) {
       int i;
       for (i = 0; i < state->uniformCount; i++){
         if(state->param[i])free(state->param[i]);
+        if(state->name[i]) free(state->name[i]);
         //~state->param[i]=NULL;
       }
     }
@@ -232,6 +232,7 @@ void destroy_array(CUBE_STATE_T *state) {
   if (state->type)   free(state->type);  // state->type   =NULL;
   if (state->flag)   free(state->flag);  // state->flag   =NULL;
   if (state->loc)    free(state->loc);   // state->loc    =NULL;
+  if (state->loc)    free(state->name);   // state->loc    =NULL;
   if (state->param)  free(state->param); // state->param  =NULL;
 }
 
@@ -254,6 +255,7 @@ static void create_array(CUBE_STATE_T *state){
   state->param  = (GLfloat**) malloc(sizeof( GLfloat*)*state->uniformCount);
   state->flag   = (int*) malloc(sizeof( int)*state->uniformCount);
   state->loc    = (GLint*) malloc(sizeof( GLint)*state->uniformCount);
+  state->name    = (GLchar**) malloc(sizeof( GLchar*)*state->uniformCount);
 
   // allocate maximum size for a param, which is a 4x4 matrix of floats
   // in the future, only allocate for specific type
@@ -264,6 +266,7 @@ static void create_array(CUBE_STATE_T *state){
     state->type   [i] = 0;
     state->loc    [i] = 0;
     state->param  [i] = (float*) malloc(sizeof(float)*16);
+    state->name   [i] = (GLchar*) malloc(sizeof(GLchar)*state->maxLength);;
     state->flag   [i] = 0;
     for(j=0; j<16; j++)state->param[i][j]=0;
   }
@@ -293,6 +296,7 @@ static void expose_uniform(CUBE_STATE_T *state){
   for(i=0;i<state->uniformCount;i++){
     glGetActiveUniform(state->programObject, i, state->maxLength, &length, &state->size[i], &state->type[i], name);
     state->loc[i] = glGetUniformLocation( state->programObject, name );
+    strncpy(state->name[i],name,length);
     printf("found param : %s\n",name);
   }
   free(name);
@@ -409,6 +413,62 @@ static void init_shaders(CUBE_STATE_T *state)
 }
 
 /***********************************************************
+ * Name: osc_error
+ *
+ * Arguments:
+ *       int - error #
+ *       const char * - error message
+ *       const char * - erronous path
+ *
+ * Description: Report OSC error to stdout
+ *
+ * Returns: void
+ *
+ ***********************************************************/
+void osc_error(int num, const char *msg, const char *path)
+{
+    printf("liblo server error %d in path %s: %s\n", num, path, msg);
+    fflush(stdout);
+}
+
+/***********************************************************
+ * Name: osc_generic_handler
+ *
+ * Arguments:
+ *       int - error #
+ *       const char * - error message
+ *       const char * - erronous path
+ *
+ * Description: catch any incoming messages and process them.
+ * 
+ * Returns: void
+ *
+ ***********************************************************/
+void osc_generic_handler(const char *path, const char *types, lo_arg ** argv,
+                    int argc, void *data, void *user_data)
+{
+    int i;
+    CUBE_STATE_T *state = user_data;
+    
+    for (i=0;i<state->uniformCount;i++){
+      if ( strcmp(state->name[i], path+1) == 0 ){
+        int j;
+        for (j=0;j<argc;j++){
+          if ( types[j] == 'f') {
+            state->param[i][j]= (GLfloat) argv[j]->f;
+          } else if ( types[j] == 'i' ){
+            state->param[i][j]= (GLfloat) argv[j]->i;
+          } else {
+            printf("%s parameter #%d wrong type (%c)! only float or int are allowed !\n",path,j,types[j]);
+          }
+        }
+        state->flag[i] = 1;
+        break;
+      }
+    }
+}
+
+/***********************************************************
  * Name: init_osc
  *
  * Arguments:
@@ -421,6 +481,12 @@ static void init_shaders(CUBE_STATE_T *state)
  ***********************************************************/
 static void init_osc(CUBE_STATE_T *state)
 {
+  char port[128];
+  sprintf(&port,"%d",state->osc_inport);
+  state->st = lo_server_thread_new(port, osc_error);
+  /* add method that will match any path and args */
+  lo_server_thread_add_method(state->st , NULL, NULL, (lo_method_handler) osc_generic_handler, state);
+  lo_server_thread_start(state->st);
 }
 
 /***********************************************************
@@ -438,30 +504,113 @@ static void init_osc(CUBE_STATE_T *state)
  int frame_id=0;
 static void redraw_scene(CUBE_STATE_T *state)
 {
-   // Start with a clear screen
-   glClear( GL_COLOR_BUFFER_BIT );
+  // Start with a clear screen
+  glClear( GL_COLOR_BUFFER_BIT );
 
-	 glUseProgram(state->programObject);
-   
-   float invert = frame_id++/100.;
-   frame_id%=100;
-   glUniform1f(glGetUniformLocation(state->programObject,"invert"),invert);
-   // Draw first (front) face:
-   // Bind texture surface to current vertices
-   glBindTexture(GL_TEXTURE_2D, state->tex);
+  glUseProgram(state->programObject);
 
-   glVertexAttribPointer( 0, 3, GL_BYTE, GL_FALSE, 0, quadx );
-   glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0, texCoords );
-	 glEnableVertexAttribArray(0);
-	 glEnableVertexAttribArray(1);
+  //~float invert = frame_id++/100.;
+  //~frame_id%=100;
+  //~glUniform1f(glGetUniformLocation(state->programObject,"invert"),invert);
+  int i;
+  for(i=0; i<state->uniformCount; i++)
+  {
+    if(state->flag[i])
+    {
+      switch (state->type[i])
+      {
+        /* float vectors */
+        case GL_FLOAT:
+          glUniform1f( state->loc[i], state->param[i][0] );
+          break;
+        case GL_FLOAT_VEC2:
+          glUniform2f( state->loc[i], (state->param[i][0]), (state->param[i][1]) );
+          break;
+        case GL_FLOAT_VEC3:
+          glUniform3f( state->loc[i], (state->param[i][0]), (state->param[i][1]),
+          (state->param[i][2]) );
+        break;
+        case GL_FLOAT_VEC4:
+          glUniform4f( state->loc[i], (state->param[i][0]), (state->param[i][1]),
+          (state->param[i][2]), (state->param[i][3]) );
+        break;
+        /* int vectors */
+        case GL_INT:
+          glUniform1i( state->loc[i], (state->param[i][0]) );
+          break;
+        case GL_INT_VEC2:
+          glUniform2i( state->loc[i], (state->param[i][0]), (state->param[i][1]) );
+          break;
+        case GL_INT_VEC3:
+          glUniform3i(state->loc[i],
+          (state->param[i][0]), (state->param[i][1]), (state->param[i][2]) );
+          break;
+        case GL_INT_VEC4:
+          glUniform4i(state->loc[i],
+          (state->param[i][0]), (state->param[i][1]),
+          (state->param[i][2]), (state->param[i][3]) );
+          break;
+        /* bool vectors */
+        case GL_BOOL:
+          glUniform1f( state->loc[i], (state->param[i][0]) );
+          break;
+        case GL_BOOL_VEC2:
+          glUniform2f( state->loc[i], (state->param[i][0]), (state->param[i][1]) );
+          break;
+        case GL_BOOL_VEC3:
+          glUniform3f( state->loc[i],
+          (state->param[i][0]), (state->param[i][1]),
+          (state->param[i][2]) );
+          break;
+        case GL_BOOL_VEC4:
+          glUniform4f( state->loc[i],
+          (state->param[i][0]), (state->param[i][1]),
+          (state->param[i][2]), (state->param[i][3]) );
+          break;
 
-   // draw first 4 vertices
+        /* float matrices */
+        case GL_FLOAT_MAT2:
+          // GL_TRUE = row major order, GL_FALSE = column major
+          glUniformMatrix2fv( state->loc[i], 1, GL_FALSE, state->param[i] );
+          break;
+        case GL_FLOAT_MAT3:
+          glUniformMatrix3fv( state->loc[i], 1, GL_FALSE, state->param[i] );
+          break;
+        case GL_FLOAT_MAT4:
+          glUniformMatrix4fv( state->loc[i], 1, GL_FALSE, state->param[i] );
+          break;
 
-	 glUniform1i(state->unif_tex,0);
+        /* textures */
+        case GL_SAMPLER_2D:
+          glUniform1i(state->loc[i], state->param[i][0]);
+          break;
+        case GL_SAMPLER_CUBE: break;
+          glUniform1i(state->loc[i], (state->param[i][0]));
+          break;
+        default:
+        ;
+      }
+      // remove flag because the value is in GL's state now...
+      state->flag[i]=0;  
 
-   glDrawArrays( GL_TRIANGLE_STRIP, 0, 4);
+    }
+  }
+  // Draw first (front) face:
+  // Bind texture surface to current vertices
+  glBindTexture(GL_TEXTURE_2D, state->tex);
 
-   eglSwapBuffers(state->display, state->surface);
+  glVertexAttribPointer( 0, 3, GL_BYTE, GL_FALSE, 0, quadx );
+  glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0, texCoords );
+  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(1);
+
+  // draw first 4 vertices
+
+  glUniform1i(state->unif_tex,0);
+
+  glDrawArrays( GL_TRIANGLE_STRIP, 0, 4);
+
+  eglSwapBuffers(state->display, state->surface);
 
 }
 
