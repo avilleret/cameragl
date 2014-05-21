@@ -7,7 +7,7 @@ It opens the Raspi camera and pass it through a fragment shader.
 All the shader's uniform variables are automatically exposed via OSC.
 
 # building
-This repo is intended to be cloned in the `/opt/vc/src/hello_pi` folder present on Rasbian distribution.
+This repo is intended to be cloned in the `/opt/vc/src/hello_pi` folder present on Raspbian distribution.
 You should follow the `/opt/vc/src/hello_pi/README` first.
 Then you need to install the `liblo` library :
 `sudo apt-get install liblo-dev`
