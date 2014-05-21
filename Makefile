@@ -1,5 +1,5 @@
 OBJS=triangle.o video.o
-BIN=LongueVue.bin
+BIN=cameragl.bin
 LDFLAGS+=-lilclient -llo
 
 include ../Makefile.include
