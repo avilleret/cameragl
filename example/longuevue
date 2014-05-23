@@ -1,0 +1,50 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:         video 
+# Required-Start:   networking ifupdown
+# Required-Stop:
+# Should-Start:      
+# Default-Start:    2 3 4 5 
+# Default-Stop:     0 1 6
+# Short-Description: Show custom splashscreen
+# Description:       Show custom splashscreen
+### END INIT INFO
+
+SRC_FOLDER="/opt/vc/src/hello_pi/cameragl/example"
+ARGS="-noaudio -nomidi -open $SRC_FOLDER/osc-sequencer.pd" 
+
+case "$1" in
+  start|""|gui)
+    $SRC_FOLDER/cameragl.bin &
+    $SRC_FOLDER/read_sensor.py &
+
+    if [ "$1" = "gui" ]; then
+      echo "Start patch with GUI"
+    else
+      echo "Start patch WITHOUT GUI"
+      ARGS="-nogui $ARGS"
+    fi
+    
+    echo "pd args : $ARGS"
+    su pi -c "pd $ARGS > /dev/null" &
+    
+    exit 0
+    ;;
+  restart|reload|force-reload)
+    echo "Error: argument '$1' not supported" >&2
+    exit 3
+    ;;
+  stop)
+    # No-op
+    killall pd
+    killall cameragl.bin
+    killall read_sensor.py
+    ;;
+  status)
+    exit 0
+    ;;
+  *)
+    echo "Usage: $0 [start|stop]" >&2
+    exit 3
+    ;;
+esac
