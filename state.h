@@ -55,7 +55,8 @@ typedef struct
   // OSC parameters
   lo_server_thread st;
   unsigned int osc_inport;
-  unsigned int osc_outport;
+  //~unsigned int osc_outport;
+  //~char *destination;
 } CUBE_STATE_T;
 
 #endif

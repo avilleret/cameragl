@@ -701,9 +701,51 @@ static void exit_func(void)
 } // exit_func()
 
 //==============================================================================
+int debug = 0;
 
-int main ()
+int main (int argc, char **argv)
 {
+   
+  extern char *optarg;
+	extern int optind;
+	int c, err = 0; 
+  int inport=9000;
+  //~int outport=9001;
+	char *fname=NULL;
+  //~char *address=NULL;
+	static char usage[] = "usage: %s [-i inport] -f fragment_shader \n";
+
+	while ((c = getopt(argc, argv, "i:f:")) != -1)
+		switch (c) {
+    //~case 'a':
+      //~printf("address :%s\n",optarg);
+		case 'i':
+      inport=atoi(optarg);
+			break;
+		//~case 'o':
+      //~outport=atoi(optarg);
+			//~break;
+		case 'f':
+			fname = optarg;
+			break;
+		case '?':
+			err = 1;
+			break;
+		}
+	if (fname == NULL) {	/* -f was mandatory */
+		fprintf(stderr, "%s: missing -f option\n", argv[0]);
+		fprintf(stderr, usage, argv[0]);
+		exit(1);
+	} else if (err) {
+		fprintf(stderr, usage, argv[0]);
+		exit(1);
+	}
+	/* see what we have */
+	//~printf("OSC destination = %s\n", address);
+	printf("OSC input listening port :  = %d\n", inport);
+	//~printf("OSC output port :  = %d\n", outport);
+	printf("fragment shader file = \"%s\"\n", fname);
+  
    atexit(exit_func);
    bcm_host_init();
 
@@ -722,8 +764,9 @@ int main ()
    init_textures(state);
    
    // TODO : parse command line argument to set input/output port and IP
-   state->osc_inport = 9000;
-   state->osc_outport = 9001;
+   state->osc_inport = inport;
+   //~state->osc_outport = outport;
+   //~state->osc_destination = address;
    // initialise OSC
    init_osc(state);
 
