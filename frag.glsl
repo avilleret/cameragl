@@ -7,8 +7,8 @@ uniform float gain;
 void main() 
 { 
   vec4 color = texture2D(Texture, TexCoordOut);
-  color.rgb*=gain;
   color.rgb = color.rgb * (1. - invert) + invert * (vec3(1.,1.,1.) - color.rgb);
+  color.rgb*=gain;
   color.a=alpha;
   gl_FragColor = color; 
 }
