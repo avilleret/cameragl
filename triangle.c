@@ -488,9 +488,7 @@ void osc_generic_handler(const char *path, const char *types, lo_arg ** argv,
  ***********************************************************/
 static void init_osc(CUBE_STATE_T *state)
 {
-  char port[128];
-  sprintf(&port,"%d",state->osc_inport);
-  state->st = lo_server_thread_new(port, osc_error);
+  state->st = lo_server_thread_new(state->osc_inport, osc_error);
   /* add method that will match any path and args */
   lo_server_thread_add_method(state->st , NULL, NULL, (lo_method_handler) osc_generic_handler, state);
   lo_server_thread_start(state->st);
@@ -709,10 +707,9 @@ int main (int argc, char **argv)
   extern char *optarg;
 	extern int optind;
 	int c, err = 0; 
-  int inport=9000;
   //~int outport=9001;
 	char *fname=NULL;
-  //~char *address=NULL;
+  char *inport="9000";
 	static char usage[] = "usage: %s [-i inport] -f fragment_shader \n";
 
 	while ((c = getopt(argc, argv, "i:f:")) != -1)
@@ -720,7 +717,7 @@ int main (int argc, char **argv)
     //~case 'a':
       //~printf("address :%s\n",optarg);
 		case 'i':
-      inport=atoi(optarg);
+      inport=optarg;
 			break;
 		//~case 'o':
       //~outport=atoi(optarg);
@@ -740,6 +737,9 @@ int main (int argc, char **argv)
 		fprintf(stderr, usage, argv[0]);
 		exit(1);
 	}
+  
+  state->osc_inport = inport;
+  
 	/* see what we have */
 	//~printf("OSC destination = %s\n", address);
 	printf("OSC input listening port :  = %d\n", inport);
@@ -770,7 +770,7 @@ int main (int argc, char **argv)
    // initialise OSC
    init_osc(state);
 
-   while (!terminate)
+   while (1)
    {
       redraw_scene(state);
    }
