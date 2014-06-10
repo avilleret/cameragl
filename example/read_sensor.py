@@ -18,7 +18,7 @@ msgPlay.setAddress("/play")
 msgPlay.append(1)
 msgStop = OSC.OSCMessage()
 msgStop.setAddress("/play")
-msgStop.append(1)
+msgStop.append(0)
 
 prev_input = 0
 print("start polling")
@@ -39,4 +39,5 @@ while True:
         print("play")
       time.sleep(0.5) # 1s debounce
     else:
+      client.send(msgStop)
       time.sleep(0.5) # 5s debounce
