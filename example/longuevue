@@ -15,7 +15,9 @@ ARGS="-noaudio -nomidi -open $SRC_FOLDER/osc-sequencer.pd"
 
 case "$1" in
   start|""|gui)
-    $SRC_FOLDER/cameragl.bin &
+    $0 stop
+    sleep 5 
+    $SRC_FOLDER/../cameragl.bin -f $SRC_FOLDER/../frag.glsl &
     $SRC_FOLDER/read_sensor.py &
 
     if [ "$1" = "gui" ]; then
