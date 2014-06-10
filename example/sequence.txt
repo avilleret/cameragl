@@ -1,5 +1,13 @@
-0 /gain 1 /alpa 1 /invert 0 /saturation 0;
-60000 /invert 0.85 /saturation 0;
-60000 /gain 3;
-60000 /gain 1;
-60000 /invert 0 /saturation 0;
+0 /gamma 2.2 /invert 0 /white 0;
+1000 wait;
+60000 /invert 0.85 /gamma 2.2;
+1000 wait;
+30000 /invert 1 /gamma 8;
+1000 wait;
+30000 /white 1;
+5000 wait;
+60000 /white 0;
+1000 wait;
+60000 /invert 0.85 /gamma 2.2;
+1000 wait;
+60000 /invert 0;
