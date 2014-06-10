@@ -314,6 +314,7 @@ static void expose_uniform(CUBE_STATE_T *state){
  ***********************************************************/
 static void init_shaders(CUBE_STATE_T *state)
 {
+  printf("init shader... ");
 	 const GLchar *vShaderStr = 
 "attribute vec4 vPosition;"
 "attribute vec2 TexCoordIn;"
@@ -415,6 +416,7 @@ static void init_shaders(CUBE_STATE_T *state)
   }
   free (fShaderStr);
   fclose (pFile);
+  printf("OK !\n");
 }
 
 /***********************************************************
@@ -504,7 +506,6 @@ static void init_osc(CUBE_STATE_T *state)
  * Returns: void
  *
  ***********************************************************/
- int frame_id=0;
 static void redraw_scene(CUBE_STATE_T *state)
 {
   // Start with a clear screen
@@ -512,9 +513,6 @@ static void redraw_scene(CUBE_STATE_T *state)
 
   glUseProgram(state->programObject);
 
-  //~float invert = frame_id++/100.;
-  //~frame_id%=100;
-  //~glUniform1f(glGetUniformLocation(state->programObject,"invert"),invert);
   int i;
   for(i=0; i<state->uniformCount; i++)
   {
@@ -767,10 +765,34 @@ int main (int argc, char **argv)
    //~state->osc_destination = address;
    // initialise OSC
    init_osc(state);
-
+   
+   //~long int start_time, time_difference;
+   //~struct timespec gettime_now;
+   //~int frame_id=0;
+   //~clock_gettime(CLOCK_REALTIME, &gettime_now);
+   //~start_time = gettime_now.tv_nsec ;
    while (1)
    {
+     
       redraw_scene(state);
+      
+      // ugly and buggy...
+      //~frame_id++;
+      //~//read current time
+      //~
+      //~if ( frame_id == 60 ){
+        //~clock_gettime(CLOCK_REALTIME, &gettime_now);
+        //~time_difference = gettime_now.tv_nsec - start_time;
+        //~if(time_difference < 0) time_difference += 1000000000;
+//~
+        //~//print frame rate
+        //~double fr = (double) time_difference/ ((double) 1000000*frame_id);
+        //~
+        //~printf("Time diff : %ld \t Framerate: %f fps\n",time_difference, fr);
+        //~frame_id=0;
+        //~start_time = gettime_now.tv_nsec;
+//~
+      //~}
    }
    return 0;
 }
