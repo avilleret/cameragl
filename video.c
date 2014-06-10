@@ -52,7 +52,7 @@
 #include "state.h"
 
 // Hard coded parameters
-#define VIDEO_FRAMERATE                 35
+#define VIDEO_FRAMERATE                 60
 #define VIDEO_BITRATE                   10000000
 #define CAM_DEVICE_NUMBER               0
 #define CAM_SHARPNESS                   -40                       // -100 .. 100
