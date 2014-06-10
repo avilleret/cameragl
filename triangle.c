@@ -132,9 +132,8 @@ static void init_ogl(CUBE_STATE_T *state)
    success = graphics_get_display_size(0 /* LCD */, &state->screen_width, &state->screen_height);
    assert( success >= 0 );
 
-	state->screen_width = 1920;
-
-	state->screen_height = 1080;
+   //state->screen_width = 800;
+   //state->screen_height = 600;
 
    dst_rect.x = 0;
    dst_rect.y = 0;
