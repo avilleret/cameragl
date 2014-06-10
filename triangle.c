@@ -704,12 +704,12 @@ int main (int argc, char **argv)
 {
    
   extern char *optarg;
-	extern int optind;
-	int c, err = 0; 
+  extern int optind;
+  int c, err = 0; 
   //~int outport=9001;
 	char *fname=NULL;
   char *inport="9000";
-	static char usage[] = "usage: %s [-i inport] -f fragment_shader \n";
+  static char usage[] = "usage: %s [-i inport] -f fragment_shader \n";
 
 	while ((c = getopt(argc, argv, "i:f:")) != -1)
 		switch (c) {
@@ -739,11 +739,11 @@ int main (int argc, char **argv)
   
   state->osc_inport = inport;
   
-	/* see what we have */
-	//~printf("OSC destination = %s\n", address);
-	printf("OSC input listening port :  = %d\n", inport);
-	//~printf("OSC output port :  = %d\n", outport);
-	printf("fragment shader file = \"%s\"\n", fname);
+  /* see what we have */
+  //~printf("OSC destination = %s\n", address);
+  printf("OSC input listening port :  = %s\n", inport);
+  //~printf("OSC output port :  = %d\n", outport);
+  printf("fragment shader file = \"%s\"\n", state->shaderFilename);
   
    atexit(exit_func);
    bcm_host_init();
@@ -754,7 +754,7 @@ int main (int argc, char **argv)
    // Start OGLES
    init_ogl(state);
 
-	 init_shaders(state);
+   init_shaders(state);
 
    // Setup the model world
    init_model_proj(state);
