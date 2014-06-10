@@ -329,10 +329,9 @@ static void init_shaders(CUBE_STATE_T *state)
   FILE * pFile;
   long lSize;
   int result;
-  const char * filename = "frag.glsl";
 
-  pFile = fopen (filename,"rb");
-  if (pFile==NULL) {printf ("can't read %s",filename); exit (1);}
+  pFile = fopen (state->shaderFilename,"rb");
+  if (pFile==NULL) {printf ("can't read %s",state->shaderFilename); exit (1);}
 
   // obtain file size:
   fseek (pFile , 0 , SEEK_END);
@@ -707,35 +706,38 @@ int main (int argc, char **argv)
   extern int optind;
   int c, err = 0; 
   //~int outport=9001;
-	char *fname=NULL;
   char *inport="9000";
   static char usage[] = "usage: %s [-i inport] -f fragment_shader \n";
 
-	while ((c = getopt(argc, argv, "i:f:")) != -1)
-		switch (c) {
+  // Clear application state
+  memset( state, 0, sizeof( *state ) );
+   
+  state->shaderFilename=NULL;
+  while ((c = getopt(argc, argv, "i:f:")) != -1)
+    switch (c) {
     //~case 'a':
       //~printf("address :%s\n",optarg);
-		case 'i':
+    case 'i':
       inport=optarg;
-			break;
-		//~case 'o':
+      break;
+    //~case 'o':
       //~outport=atoi(optarg);
-			//~break;
-		case 'f':
-			fname = optarg;
-			break;
-		case '?':
-			err = 1;
-			break;
-		}
-	if (fname == NULL) {	/* -f was mandatory */
-		fprintf(stderr, "%s: missing -f option\n", argv[0]);
-		fprintf(stderr, usage, argv[0]);
-		exit(1);
-	} else if (err) {
-		fprintf(stderr, usage, argv[0]);
-		exit(1);
-	}
+      //~break;
+    case 'f':
+      state->shaderFilename = optarg;
+      break;
+    case '?':
+      err = 1;
+      break;
+    }
+  if (state->shaderFilename == NULL) {  /* -f was mandatory */
+    fprintf(stderr, "%s: missing -f option\n", argv[0]);
+    fprintf(stderr, usage, argv[0]);
+    exit(1);
+  } else if (err) {
+    fprintf(stderr, usage, argv[0]);
+    exit(1);
+  }
   
   state->osc_inport = inport;
   
@@ -747,9 +749,6 @@ int main (int argc, char **argv)
   
    atexit(exit_func);
    bcm_host_init();
-
-   // Clear application state
-   memset( state, 0, sizeof( *state ) );
       
    // Start OGLES
    init_ogl(state);

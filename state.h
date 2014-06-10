@@ -52,6 +52,8 @@ typedef struct
   GLfloat **param;
   int *flag;
   
+  char* shaderFilename;
+  
   // OSC parameters
   lo_server_thread st;
   char* osc_inport;
