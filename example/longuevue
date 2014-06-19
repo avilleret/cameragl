@@ -11,7 +11,7 @@
 ### END INIT INFO
 
 SRC_FOLDER="/opt/vc/src/hello_pi/cameragl/example"
-ARGS="-noaudio -nomidi -open $SRC_FOLDER/osc-sequencer.pd" 
+ARGS="-noaudio -nomidi -open /boot/osc-sequencer.pd" 
 
 case "$1" in
   start|""|gui)

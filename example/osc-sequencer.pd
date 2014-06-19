@@ -1,5 +1,5 @@
-#N canvas 1288 194 438 164 10;
-#N canvas 521 196 742 875 stuff 1;
+#N canvas 1279 209 438 88 10;
+#N canvas 506 193 742 875 stuff 0;
 #X obj 145 7 osc/unpackOSC;
 #X obj 145 29 osc/routeOSC /play;
 #X obj 113 478 textfile;
@@ -154,8 +154,7 @@
 #X msg 470 302 0;
 #X obj 382 277 spigot;
 #X msg 415 255 1;
-#X msg 134 393 read /boot/longuevue_sequence.txt;
-#X msg 143 413 read equence.txt;
+#X msg 134 393 read sequence.txt;
 #X connect 0 0 1 0;
 #X connect 1 0 30 0;
 #X connect 2 0 4 0;
@@ -214,6 +213,5 @@
 #X connect 52 0 24 0;
 #X connect 53 0 52 1;
 #X connect 54 0 2 0;
-#X connect 55 0 2 0;
 #X coords 0 -1 1 1 410 60 1 300 50;
-#X restore 14 79 pd stuff;
+#X restore 14 -1 pd stuff;
