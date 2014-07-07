@@ -1,5 +1,5 @@
-#N canvas 1287 331 438 88 10;
-#N canvas 494 185 742 875 stuff 0;
+#N canvas 1284 336 438 88 10;
+#N canvas 491 190 742 875 stuff 0;
 #X obj 145 7 osc/unpackOSC;
 #X obj 145 29 osc/routeOSC /play;
 #X obj 113 478 textfile;
@@ -159,6 +159,9 @@
 #X msg 134 393 read sequence.txt;
 #X obj 113 131 f;
 #X obj 303 174 t b b;
+#X obj 242 144 spigot;
+#X obj 550 67 tgl 15 1 empty empty loop 17 7 0 10 -262144 -1 -1 1 1
+;
 #X connect 0 0 1 0;
 #X connect 1 0 30 0;
 #X connect 2 0 4 0;
@@ -216,9 +219,11 @@
 #X connect 53 0 52 1;
 #X connect 54 0 2 0;
 #X connect 55 0 25 0;
-#X connect 56 0 55 0;
+#X connect 56 0 57 0;
 #X connect 56 1 51 0;
 #X connect 56 1 23 0;
 #X connect 56 1 17 0;
+#X connect 57 0 55 0;
+#X connect 58 0 57 1;
 #X coords 0 -1 1 1 410 60 1 300 50;
 #X restore 14 -1 pd stuff;
