@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 #include <assert.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "bcm_host.h"
 
@@ -331,8 +332,8 @@ static void init_shaders(CUBE_STATE_T *state)
   long lSize;
   int result;
 
-  pFile = fopen (state->shaderFilename,"rb");
-  if (pFile==NULL) {printf ("can't read %s",state->shaderFilename); exit (1);}
+  pFile = fopen (state->fragmentShaderFilename,"rb");
+  if (pFile==NULL) {printf ("can't read %s",state->fragmentShaderFilename); exit (1);}
 
   // obtain file size:
   fseek (pFile , 0 , SEEK_END);
@@ -633,8 +634,8 @@ static void init_textures(CUBE_STATE_T *state)
    glGenTextures(1, &state->tex);
 
    glBindTexture(GL_TEXTURE_2D, state->tex);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, state->screen_width,
-			 state->screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, state->camera_width,
+			 state->camera_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -695,7 +696,6 @@ static void exit_func(void)
 } // exit_func()
 
 //==============================================================================
-int debug = 0;
 
 int main (int argc, char **argv)
 {
@@ -709,9 +709,31 @@ int main (int argc, char **argv)
 
   // Clear application state
   memset( state, 0, sizeof( *state ) );
+  
+  state->camera_width = 640;
+  state->camera_height = 480;
+  state->camera_fps = 60;
    
-  state->shaderFilename=NULL;
-  while ((c = getopt(argc, argv, "i:f:")) != -1)
+  state->fragmentShaderFilename=NULL;
+  state->vertexShaderFilename=NULL;
+  
+  static int verbose=0;
+  static struct option long_options[] =
+  {
+    {"verbose",      no_argument, &verbose, 1},
+    {"fps",          optional_argument, 0, 's'},
+    {"width",        optional_argument, 0, 'w'},
+    {"height",       optional_argument, 0, 'h'},
+    {"fragment",     optional_argument, 0, 'f'},
+    {"vertex",       optional_argument, 0, 'v'},
+    {"input_port",   optional_argument, 0, 'i'},
+    {0, 0, 0, 0}
+  };
+  
+  int option_index = 0;
+  state->verbose = verbose;
+  
+  while ((c = getopt_long(argc, argv, "i:f:h:w:q:v:", long_options, &option_index)) != -1)
     switch (c) {
     //~case 'a':
       //~printf("address :%s\n",optarg);
@@ -722,13 +744,25 @@ int main (int argc, char **argv)
       //~outport=atoi(optarg);
       //~break;
     case 'f':
-      state->shaderFilename = optarg;
+      state->fragmentShaderFilename = optarg;
+      break;
+    case 'v':
+      state->vertexShaderFilename = optarg;
+      break;
+    case 'w': // set camera width
+      state->camera_width = atoi(optarg);
+      break;
+    case 'h': // set camera height
+      state->camera_height = atoi(optarg);
+      break;
+    case 's': // set camera fps
+      state->camera_fps = atoi(optarg);
       break;
     case '?':
       err = 1;
       break;
     }
-  if (state->shaderFilename == NULL) {  /* -f was mandatory */
+  if (state->fragmentShaderFilename == NULL) {  /* -f was mandatory */
     fprintf(stderr, "%s: missing -f option\n", argv[0]);
     fprintf(stderr, usage, argv[0]);
     exit(1);
@@ -743,7 +777,7 @@ int main (int argc, char **argv)
   //~printf("OSC destination = %s\n", address);
   printf("OSC input listening port :  = %s\n", inport);
   //~printf("OSC output port :  = %d\n", outport);
-  printf("fragment shader file = \"%s\"\n", state->shaderFilename);
+  printf("fragment shader file = \"%s\"\n", state->fragmentShaderFilename);
   
    atexit(exit_func);
    bcm_host_init();

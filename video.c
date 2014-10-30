@@ -52,7 +52,7 @@
 #include "state.h"
 
 // Hard coded parameters
-#define VIDEO_FRAMERATE                 60
+// #define VIDEO_FRAMERATE                 60
 #define VIDEO_BITRATE                   10000000
 #define CAM_DEVICE_NUMBER               0
 #define CAM_SHARPNESS                   -40                       // -100 .. 100
@@ -81,6 +81,7 @@
 
 // Global variable used by the signal handler and capture/encoding loop
 static int want_quit = 0;
+static int verbose = 0;
 
 // Our application context passed around
 // the main routine and callback handlers
@@ -99,7 +100,8 @@ typedef struct {
 
 // Ugly, stupid utility functions
 static void say(const char* message, ...) {
-/*    va_list args;
+  if ( verbose ){
+    va_list args;
     char str[1024];
     memset(str, 0, sizeof(str));
     va_start(args, message);
@@ -109,7 +111,8 @@ static void say(const char* message, ...) {
     if(str[str_len - 1] != '\n') {
         str[str_len] = '\n';
     }
-    fprintf(stderr, str);*/
+    fprintf(stderr, str);
+  }
 }
 
 static void die(const char* message, ...) {
@@ -482,6 +485,7 @@ void *video_decode_test(void* arg) {
     bcm_host_init();
 
 		CUBE_STATE_T *state = (CUBE_STATE_T *)arg;
+    verbose = state->verbose;
 
     OMX_ERRORTYPE r;
 
@@ -557,9 +561,9 @@ void *video_decode_test(void* arg) {
     if((r = OMX_GetParameter(ctx.camera, OMX_IndexParamPortDefinition, &camera_portdef)) != OMX_ErrorNone) {
         omx_die(r, "Failed to get port definition for camera preview output port 70");
     }
-    camera_portdef.format.video.nFrameWidth  = state->screen_width;
-    camera_portdef.format.video.nFrameHeight = state->screen_height;
-    camera_portdef.format.video.xFramerate   = VIDEO_FRAMERATE << 16;
+    camera_portdef.format.video.nFrameWidth  = state->camera_width;
+    camera_portdef.format.video.nFrameHeight = state->camera_height;
+    camera_portdef.format.video.xFramerate   = state->camera_fps << 16;
     // Stolen from gstomxvideodec.c of gst-omx
     camera_portdef.format.video.nStride      = (camera_portdef.format.video.nFrameWidth + camera_portdef.nBufferAlignment - 1) & (~(camera_portdef.nBufferAlignment - 1));
     camera_portdef.format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
