@@ -12,6 +12,9 @@ typedef struct
 {
   uint32_t screen_width;
   uint32_t screen_height;
+  uint32_t camera_width;
+  uint32_t camera_height;
+  uint32_t camera_fps;
   // OpenGL|ES objects
   EGLDisplay display;
   EGLSurface surface;
@@ -53,6 +56,7 @@ typedef struct
   int *flag;
   
   char* shaderFilename;
+  int verbose;
   
   // OSC parameters
   lo_server_thread st;

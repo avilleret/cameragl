@@ -513,11 +513,12 @@ void *video_decode_test(void* arg) {
     init_component_handle("null_sink", &ctx.null_sink, &ctx, &callbacks);
     init_component_handle("clock", &ctx.clock, &ctx, &callbacks);
 
+/*
     OMX_U32 screen_width = state->screen_width, screen_height = state->screen_height;
     if(graphics_get_display_size(DISPLAY_DEVICE, &screen_width, &screen_height) < 0) {
         die("Failed to get display size");
     }
-
+*/
     say("Configuring camera...");
 
     dump_port(ctx.clock, 80, OMX_TRUE);

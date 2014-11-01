@@ -705,8 +705,8 @@ int main (int argc, char **argv)
   int c, err = 0; 
   //~int outport=9001;
   char *inport="9000";
-  static char usage[] = "usage: %s [-i inport] -f fragment_shader \n";
-
+  static char usage[] = "usage: %s [-i inport] [-w camera_width] [-h camera_height] -f fragment_shader \n";
+  
   // Clear application state
   memset( state, 0, sizeof( *state ) );
   
@@ -721,17 +721,16 @@ int main (int argc, char **argv)
   static struct option long_options[] =
   {
     {"verbose",      no_argument, &verbose, 1},
-    {"fps",          optional_argument, 0, 's'},
-    {"width",        optional_argument, 0, 'w'},
-    {"height",       optional_argument, 0, 'h'},
-    {"fragment",     optional_argument, 0, 'f'},
-    {"vertex",       optional_argument, 0, 'v'},
-    {"input_port",   optional_argument, 0, 'i'},
+    {"fps",          required_argument, 0, 'r'},
+    {"width",        required_argument, 0, 'w'},
+    {"height",       required_argument, 0, 'h'},
+    {"fragment",     required_argument, 0, 'f'},
+    {"vertex",       required_argument, 0, 'v'},
+    {"input_port",   required_argument, 0, 'i'},
     {0, 0, 0, 0}
   };
   
   int option_index = 0;
-  state->verbose = verbose;
   
   while ((c = getopt_long(argc, argv, "i:f:h:w:q:v:", long_options, &option_index)) != -1)
     switch (c) {
@@ -755,21 +754,20 @@ int main (int argc, char **argv)
     case 'h': // set camera height
       state->camera_height = atoi(optarg);
       break;
-    case 's': // set camera fps
+    case 'r': // set camera fps
       state->camera_fps = atoi(optarg);
       break;
     case '?':
       err = 1;
       break;
     }
-  if (state->fragmentShaderFilename == NULL) {  /* -f was mandatory */
-    fprintf(stderr, "%s: missing -f option\n", argv[0]);
-    fprintf(stderr, usage, argv[0]);
-    exit(1);
-  } else if (err) {
+  if (err) {
     fprintf(stderr, usage, argv[0]);
     exit(1);
   }
+  
+  state->verbose = verbose;
+  if (verbose) printf("I'm verbose !\n");
   
   state->osc_inport = inport;
   
