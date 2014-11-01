@@ -55,7 +55,9 @@ typedef struct
   GLfloat **param;
   int *flag;
   
-  char* shaderFilename;
+  char* fragmentShaderFilename;
+  char* vertexShaderFilename;
+  
   int verbose;
   
   // OSC parameters

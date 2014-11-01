@@ -316,7 +316,11 @@ static void expose_uniform(CUBE_STATE_T *state){
 static void init_shaders(CUBE_STATE_T *state)
 {
   printf("init shader... ");
-	 const GLchar *vShaderStr = 
+	 GLchar *vShaderStr=NULL; // TODO should those be const ?
+   GLchar *fShaderStr=NULL;
+  
+
+	 const GLchar *defaultVertexShader = 
 "attribute vec4 vPosition;"
 "attribute vec2 TexCoordIn;"
 "varying vec2 TexCoordOut;"
@@ -326,39 +330,68 @@ static void init_shaders(CUBE_STATE_T *state)
 "TexCoordOut = TexCoordIn;"
 "} \n";
 
-  GLchar *fShaderStr;
+  const GLchar *defaultFragmentShader =  
+"precision mediump float;"
+"varying vec2 TexCoordOut;"
+"uniform sampler2D Texture;"
+"void main() \n"
+"{ \n"
+" gl_FragColor = texture2D(Texture, TexCoordOut); \n"
+"} \n";
 
-  FILE * pFile;
+  FILE * pfFile=NULL;
+  FILE * pvFile=NULL;
   long lSize;
   int result;
 
-  pFile = fopen (state->fragmentShaderFilename,"rb");
-  if (pFile==NULL) {printf ("can't read %s",state->fragmentShaderFilename); exit (1);}
+  pfFile = fopen (state->fragmentShaderFilename,"rb");
+  if (pfFile==NULL) {
+    fShaderStr=defaultFragmentShader;
+    } else {
 
-  // obtain file size:
-  fseek (pFile , 0 , SEEK_END);
-  lSize = ftell (pFile);
-  rewind (pFile);
+    // obtain file size:
+    fseek (pfFile , 0 , SEEK_END);
+    lSize = ftell (pfFile);
+    rewind (pfFile);
 
-  // allocate memory to contain the whole file:
-  fShaderStr = (GLchar*) malloc (sizeof(GLchar)*lSize);
-  if (fShaderStr == NULL) {fputs ("Memory error",stderr); exit (2);}
+    // allocate memory to contain the whole file:
+    fShaderStr = (GLchar*) malloc (sizeof(GLchar)*lSize);
+    if (fShaderStr == NULL) {fputs ("Memory error",stderr); exit (2);}
 
-  // copy the file into the buffer:
-  result = fread (fShaderStr,1,lSize,pFile);
-  if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
+    // copy the file into the buffer:
+    result = fread (fShaderStr,1,lSize,pfFile);
+    if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
 
-  /* the whole file is now loaded in the memory buffer. */
+    /* the whole file is now loaded in the memory buffer. */
+  }
 
-  // terminate
+  pvFile = fopen (state->vertexShaderFilename,"rb");
+  if (pvFile==NULL) {
+    vShaderStr=defaultVertexShader;
+    } else {
 
+    // obtain file size:
+    fseek (pvFile , 0 , SEEK_END);
+    lSize = ftell (pvFile);
+    rewind (pvFile);
+
+    // allocate memory to contain the whole file:
+    vShaderStr = (GLchar*) malloc (sizeof(GLchar)*lSize);
+    if (vShaderStr == NULL) {fputs ("Memory error",stderr); exit (2);}
+
+    // copy the file into the buffer:
+    result = fread (vShaderStr,1,lSize,pvFile);
+    if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
+
+    /* the whole file is now loaded in the memory buffer. */
+  }
 
 	GLuint vertexShader;
 	GLuint fragmentShader;
 	GLint compiled;
 		 
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vShaderStr, NULL);
+	glShaderSource(vertexShader, 1, (const GLchar **) &vShaderStr, NULL);
 
 
 	glCompileShader(vertexShader);
@@ -409,14 +442,14 @@ static void init_shaders(CUBE_STATE_T *state)
       free(infoLog);
     }
     glDeleteProgram(state->programObject);
-    free (fShaderStr);
-    fclose (pFile);
-    exit(1);
+    exit(1); // TODO don't exist outside main : better check return value
   } else {
     expose_uniform(state);
   }
-  free (fShaderStr);
-  fclose (pFile);
+  if ( fShaderStr!=NULL && fShaderStr!=defaultFragmentShader) free (fShaderStr);
+  if ( vShaderStr!=NULL && vShaderStr!=defaultVertexShader) free (fShaderStr);
+  if (pfFile) fclose (pfFile);
+  if (pvFile) fclose (pvFile);
   printf("OK !\n");
 }
 
