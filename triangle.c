@@ -447,7 +447,7 @@ static void init_shaders(CUBE_STATE_T *state)
     expose_uniform(state);
   }
   if ( fShaderStr!=NULL && fShaderStr!=defaultFragmentShader) free (fShaderStr);
-  if ( vShaderStr!=NULL && vShaderStr!=defaultVertexShader) free (fShaderStr);
+  if ( vShaderStr!=NULL && vShaderStr!=defaultVertexShader) free (vShaderStr);
   if (pfFile) fclose (pfFile);
   if (pvFile) fclose (pvFile);
   printf("OK !\n");
